@@ -1,0 +1,42 @@
+--  Cyclictest program written in Ada.
+--  Copyright (C) 2018 Glen Cornell <glen.m.cornell@gmail.com>
+--  
+--  This program is free software: you can redistribute it and/or
+--  modify it under the terms of the GNU General Public License as
+--  published by the Free Software Foundation, either version 3 of the
+--  License, or (at your option) any later version.
+--
+--  This program is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program.  If not, see
+--  <http://www.gnu.org/licenses/>.
+
+project cyclictest is
+  for Object_Dir use ".objs";
+  for Exec_Dir use ".";
+  for Languages use ("Ada");
+
+  for Main use ("cyclictest");
+
+  package Compiler is
+     for Default_Switches ("ada") use (
+       "-ggdb",         -- compile for debugging
+       "-O0",           -- -Ox, Optimization  0, 1, 2, 3, or -Os to Optimize for size.
+       "-gnatwa",       -- Enable almost all warnings.
+       "-g"             -- debugging on
+      ); 
+  end Compiler;
+
+  package Linker is
+     for Default_Switches ("ada") use ("-ggdb");
+  end Linker;
+
+  package Ide is
+     for Vcs_Kind use "Git";
+  end Ide;
+
+end cyclictest;
