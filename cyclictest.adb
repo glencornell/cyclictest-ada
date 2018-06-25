@@ -85,7 +85,6 @@ procedure Cyclictest is
    --  Used in calculation of jitter metrics
    function Max(A : in Ada.Real_Time.Time_Span;
 		B : in Ada.Real_Time.Time_Span) return Ada.Real_Time.Time_Span is
-      use type Ada.Real_Time.Time_Span;
    begin
       if A > B then
 	 return A;
@@ -95,7 +94,6 @@ procedure Cyclictest is
    
    function Min(A : in Ada.Real_Time.Time_Span;
 		B : in Ada.Real_Time.Time_Span) return Ada.Real_Time.Time_Span is
-      use type Ada.Real_Time.Time_Span;
    begin
       if A < B then
 	 return A;
