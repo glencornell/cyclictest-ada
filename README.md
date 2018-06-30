@@ -31,11 +31,8 @@ gprbuild -P cyclictest.gpr cyclictest
 ## Running
 
 ```
-./cyclictest | tee output.txt | head
+./cyclictest
 '''
-
-Text emitted on standard output can be used to generate a histogram or
-scatter plot using your favorite plotting program (such as gnuplot).
 
 ## Notes
 
@@ -46,7 +43,9 @@ RAM and set task priority).
 
 * Add a sigint handler to prevent the program from being interrupted.
 
-* Refactor the code into a generic cyclic task that performs the
-  mechanics of this program, yet allows one to add their own
-  subprogram which is invoked periodically.  This would be a good
-  starting point for other real-time programs.
+* Create an uninstrumented form of the
+  generic_instrumented_cyclic_tasks package.
+
+* Add processor affinity to the task as a creation option.
+
+* Add an option to print out a histogram of jitter samples.

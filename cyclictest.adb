@@ -46,9 +46,10 @@
 --  This pragma is used to set the scheduling policy to SCHED_FIFO.
 pragma Task_Dispatching_Policy (FIFO_Within_Priorities);
 
-with Ada.Real_Time;
 with Ada.Text_Io;
 with Os_Lib.Posix;
+with Generic_Instrumented_Cyclic_Tasks;
+with System;
 with Interfaces.C;
 
 procedure Cyclictest is
@@ -59,48 +60,38 @@ procedure Cyclictest is
    --  run-time task scheduler is prevented from waiting until a tick
    --  interval to schedule this task.
    pragma Time_Slice (0.0);
-      
-   use type Ada.Real_Time.Time;
-   use type Ada.Real_Time.Time_Span;
+   
    use type Interfaces.C.Int;
    use type Interfaces.C.Unsigned;
    
-   type Diff_Array_Index_Type is range 1 .. 100_000;
-   type Diff_Array_Type is array (Diff_Array_Index_Type) of Ada.Real_Time.Time_Span;
-
-   Now : Ada.Real_Time.Time;
-   Next : Ada.Real_Time.Time;
-   Interval : constant Ada.Real_Time.Time_Span := Ada.Real_Time.Microseconds(250);
-   Diff_Array : Diff_Array_Type;
-   --  Diff_Array contains the jitter measurements.
-   
-   -- Jitter values
-   Jitter : Ada.Real_Time.Time_Span := Ada.Real_Time.Time_Span_Zero;
-   Min_Jitter : Ada.Real_Time.Time_Span := Ada.Real_Time.Time_Span_Last;
-   Max_Jitter : Ada.Real_Time.Time_Span := Ada.Real_Time.Time_Span_Zero;
-   Avg_Jitter : Ada.Real_Time.Time_Span := Ada.Real_Time.Time_Span_Zero;
-   Accumulated_Jitter : Ada.Real_Time.Time_Span := Ada.Real_Time.Time_Span_Zero;
-   Number_Of_Jitter_Samples : Positive := 1;
-   
-   --  Used in calculation of jitter metrics
-   function Max(A : in Ada.Real_Time.Time_Span;
-		B : in Ada.Real_Time.Time_Span) return Ada.Real_Time.Time_Span is
+   type Task_Data is record
+      Count : Natural;
+      Max_Count : Positive;
+   end record;
+   procedure On_Start (Item : in out Task_Data) is 
    begin
-      if A > B then
-	 return A;
-      end if;
-      return B;
-   end Max;
-   
-   function Min(A : in Ada.Real_Time.Time_Span;
-		B : in Ada.Real_Time.Time_Span) return Ada.Real_Time.Time_Span is
+      Item.Count     := 0;
+      Item.Max_Count := 1_000_000;
+   end On_Start;
+   procedure On_Tick (Item : in out Task_Data; Terminated : out Boolean) is 
    begin
-      if A < B then
-	 return A;
-      end if;
-      return B;
-   end Min;
-
+      Item.Count := Item.Count + 1;
+      Terminated := Item.Count >= Item.Max_Count;
+   end On_Tick;
+   procedure On_Stop (Item : in out Task_Data) is
+   begin
+      null;
+   end On_Stop;
+   package Cyclic_Tasks is new Generic_Instrumented_Cyclic_Tasks 
+     (T => Task_Data,
+      On_Start => On_Start,
+      On_Tick => On_Tick,
+      On_Stop => On_Stop);
+   
+   T1 : Cyclic_Tasks.Cyclic_Task 
+     (Task_Priority => System.Priority'Pred(System.Priority'Last),
+      Period_In_Microseconds => 1000);
+   
 begin
    --  ===============================================================
    --  STEP 3: check for root effective user id and warn user
@@ -118,55 +109,8 @@ begin
       then
 	 raise Program_Error with "mlockall() failed";
       end if;
-      
    end if;
    
-   --  ===============================================================
-   --  Main data collection loop.  This loop sleeps for a bit and then
-   --  stores the difference between the expected and actual wake-up
-   --  times (jitter).  The loop iterates over the size of the data
-   --  collection array.
-   Now := Ada.Real_Time.Clock;
-   Next := Now + Interval;
-   for I in Diff_Array_Index_Type'Range loop
-      --  An Ada "delay until" statement maps to a POSIX.4-compliant
-      --  sleep statement, such as clock_nanosleep(), which utilizes
-      --  the system's monotonic clock.  The language also guarantees
-      --  that the delay is no less than the specified duration.
-      delay until Next;
-      
-      --  This is where you would perform your cyclic activity...
-      
-      --  Grab the actual wake-up time
-      Now := Ada.Real_Time.Clock;
-
-      --  Calculate the jitter metrics...
-      Jitter := Now - Next;
-      Min_Jitter := Min(Min_Jitter, Jitter);
-      Max_Jitter := Max(Max_Jitter, Jitter);
-      begin
-	 --  Calculate the running average jitter.  The declarative
-	 --  block is necessary to prevent overflow.
-	 Accumulated_Jitter := Accumulated_Jitter + Jitter;
-	 Number_Of_Jitter_Samples := Number_Of_Jitter_Samples + 1;
-      exception
-	 when others =>
-	    Accumulated_Jitter := Jitter;
-	    Number_Of_Jitter_Samples := 1;
-      end;
-      Avg_Jitter := Accumulated_Jitter / Number_Of_Jitter_Samples;
-      Diff_Array(I) := Jitter;
-      
-      --  Final step: calculate the next time to wake up...
-      Next := Next + Interval;
-   end loop;
+   T1.Start;
    
-   Ada.Text_Io.Put_Line("Minimum Jitter (s)" & Ascii.Ht & Duration'Image(Ada.Real_Time.To_Duration(Min_Jitter)));
-   Ada.Text_Io.Put_Line("Maximum Jitter (s)" & Ascii.Ht & Duration'Image(Ada.Real_Time.To_Duration(Max_Jitter)));
-   Ada.Text_Io.Put_Line("Average Jitter (s)" & Ascii.Ht & Duration'Image(Ada.Real_Time.To_Duration(Avg_Jitter)));
-   
-   Ada.Text_Io.Put_Line("Jitter Samples");
-   for I in Diff_Array_Index_Type'Range loop
-      Ada.Text_Io.Put_Line(Duration'Image(Ada.Real_Time.To_Duration(Diff_Array(I))));
-   end loop;
 end Cyclictest;
