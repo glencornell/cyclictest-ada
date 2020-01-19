@@ -5,13 +5,17 @@ Cyclictest program written in Ada.
 ## Overview
 
 This program is a (very) simplified version of the cyclictest program.
-My objectives when writing this program were 1) to learn how to
-utilize Ada native language real-time features and 2) to create an Ada
-program that performs properly on a POSIX.4 real-time compliant
-operating system utilizing as little OS-specific real-time features as
-possible.  In this manner, one can use this code as one possible
-implementation for portable real-time applications in Ada on
-POSIX-compliant operating systems.
+My objectives when writing this program were to:
+
+1. learn how to utilize Ada native language real-time features and
+
+2. to create an Ada program that performs properly on a POSIX.4
+real-time compliant operating system utilizing as little OS-specific
+real-time features as possible.
+
+In this manner, one can use this code as one possible implementation
+for portable real-time applications in Ada on POSIX-compliant
+operating systems.
 
 The following was used as a reference guide for the creation of this
 program:
@@ -26,13 +30,13 @@ program distributed with the rt-tests package.
 
 ```
 gprbuild -P cyclictest.gpr cyclictest
-'''
+```
 
 ## Running
 
 ```
 ./cyclictest
-'''
+```
 
 ## Notes
 
